@@ -70,6 +70,10 @@ try:
 except Exception as e:
     print("❌ Error:", e)
 
+✅ Connected to School server
+📚 Before enrollment: ['math', 'history']
+🎓 After enrollment: ['math', 'history', 'physics']
+
 ```
 
 ### Question 2
@@ -140,6 +144,11 @@ def run():
 
 if __name__ == '__main__':
     run()
+
+📘 Library server running on port 50051...
+📖 Sending book to checkout: 1984
+📚 Checkout request: 1984 by George Orwell
+✅ Received book back: 1984 by George Orwell
 
 ```
 
