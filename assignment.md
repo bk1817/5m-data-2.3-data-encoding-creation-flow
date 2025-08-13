@@ -16,10 +16,59 @@ Answer:
 
 ```python
 # Thrift schema (student.thrift)
+namespace py student_thrift
+
+struct Student {
+  1: required string name,
+  2: required i32 age,
+  3: optional list<string> courses
+}
+
+service School {
+  Student enrollCourse(1: required Student student, 2: required string course)
+}
 
 # Thrift server (student_server.py)
+import thriftpy2
+from thriftpy2.rpc import make_server
 
+# Load the Thrift schema
+student_thrift = thriftpy2.load("schema/student.thrift", module_name="student_thrift")
+
+# Define the service implementation
+class SchoolService:
+    def enrollCourse(self, student, course):
+        if student.courses is None:
+            student.courses = []
+        student.courses.append(course)
+        return student
+
+# Start the server
+server = make_server(student_thrift.School, SchoolService(), host='localhost', port=6000)
+print("🎓 School server is running on port 6000...")
+server.serve()
 # Thrift client (student_client.py)
+import thriftpy2
+from thriftpy2.rpc import make_client
+
+# Load the Thrift schema
+student_thrift = thriftpy2.load("schema/student.thrift", module_name="student_thrift")
+
+# Connect to the server
+try:
+    school = make_client(student_thrift.School, 'localhost', 6000)
+    print("✅ Connected to School server")
+
+    # Create a Student object
+    alice = student_thrift.Student(name="Alice", age=20, courses=["math", "history"])
+    print("📚 Before enrollment:", alice.courses)
+
+    # Enroll in a new course
+    updated = school.enrollCourse(alice, "physics")
+    print("🎓 After enrollment:", updated.courses)
+
+except Exception as e:
+    print("❌ Error:", e)
 
 ```
 
@@ -31,10 +80,66 @@ Answer:
 
 ```python
 # Protobuf schema (book.proto)
+syntax = "proto3";
+
+package library;
+
+message Book {
+  string title = 1;
+  string author = 2;
+  int32 page_count = 3;
+}
+
+service Library {
+  rpc CheckoutBook(Book) returns (Book);
+}
 
 # Protobuf server (book_server.py)
+import grpc
+from concurrent import futures
+import time
+
+import book_pb2
+import book_pb2_grpc
+
+class LibraryServicer(book_pb2_grpc.LibraryServicer):
+    def CheckoutBook(self, request, context):
+        print(f"📚 Checkout request: {request.title} by {request.author}")
+        return request  # Just echoing back the same Book
+
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    book_pb2_grpc.add_LibraryServicer_to_server(LibraryServicer(), server)
+    server.add_insecure_port('[::]:50051')
+    print("📘 Library server running on port 50051...")
+    server.start()
+    try:
+        while True:
+            time.sleep(86400)
+    except KeyboardInterrupt:
+        server.stop(0)
+
+if __name__ == '__main__':
+    serve()
+
 
 # Protobuf client (book_client.py)
+import grpc
+import book_pb2
+import book_pb2_grpc
+
+def run():
+    channel = grpc.insecure_channel('localhost:50051')
+    stub = book_pb2_grpc.LibraryStub(channel)
+
+    book = book_pb2.Book(title="1984", author="George Orwell", page_count=328)
+    print("📖 Sending book to checkout:", book.title)
+
+    response = stub.CheckoutBook(book)
+    print("✅ Received book back:", response.title, "by", response.author)
+
+if __name__ == '__main__':
+    run()
 
 ```
 
