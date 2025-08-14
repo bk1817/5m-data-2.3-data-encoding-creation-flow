@@ -15,8 +15,7 @@ Question: Implement a simple Thrift server and client that defines a `Student` s
 Answer:
 
 ```python
-# Thrift schema (student.thrift)
-namespace py student_thrift
+%%writefile ../schema/student.thrift
 
 struct Student {
   1: required string name,
@@ -26,14 +25,15 @@ struct Student {
 
 service School {
   Student enrollCourse(1: required Student student, 2: required string course)
-}
 
-# Thrift server (student_server.py)
+Overwriting ../schema/student.thrift
+
+%%writefile ../student_server.py
 import thriftpy2
 from thriftpy2.rpc import make_server
 
-# Load the Thrift schema
-student_thrift = thriftpy2.load("schema/student.thrift", module_name="student_thrift")
+student_thrift = thriftpy2.load("student.thrift", module_name="student_thrift")
+
 
 # Define the service implementation
 class SchoolService:
@@ -47,23 +47,21 @@ class SchoolService:
 server = make_server(student_thrift.School, SchoolService(), host='localhost', port=6000)
 print("🎓 School server is running on port 6000...")
 server.serve()
-# Thrift client (student_client.py)
+
+Writing ../student_server.py
+
 import thriftpy2
 from thriftpy2.rpc import make_client
 
-# Load the Thrift schema
 student_thrift = thriftpy2.load("schema/student.thrift", module_name="student_thrift")
 
-# Connect to the server
 try:
     school = make_client(student_thrift.School, 'localhost', 6000)
     print("✅ Connected to School server")
 
-    # Create a Student object
     alice = student_thrift.Student(name="Alice", age=20, courses=["math", "history"])
     print("📚 Before enrollment:", alice.courses)
 
-    # Enroll in a new course
     updated = school.enrollCourse(alice, "physics")
     print("🎓 After enrollment:", updated.courses)
 
